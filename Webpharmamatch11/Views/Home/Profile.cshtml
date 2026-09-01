@@ -1,0 +1,208 @@
+@{
+    ViewData["Title"] = "الملف الشخصي للصيدلي";
+    string doctorName = ViewBag.DoctorName ?? "د. أحمد عبد الرحمن";
+    string role = ViewBag.Role ?? "صيدلي مرخص";
+    string pharmacyName = ViewBag.PharmacyName ?? "صيدلية الشفاء الحديثة";
+    string licenseNumber = ViewBag.LicenseNumber ?? "LIC-2024-9981-AR";
+    string phoneNumber = ViewBag.PhoneNumber ?? "+966 50 123 4567";
+    string address = ViewBag.Address ?? "حي المروج، الرياض، المملكة العربية السعودية";
+    int expiredCount = ViewBag.ExpiredCount ?? 1;
+    int totalAlternatives = ViewBag.TotalAlternatives ?? 420;
+    bool showEditForm = ViewBag.ShowEditForm ?? false;
+}
+
+<div class="container-fluid py-2">
+    <!-- إشعار نجاح التحديث إن وجد -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-4 mb-4 shadow-sm fw-bold" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- 1. بطاقة العرض الرئيسية للملف الشخصي (View Mode Card) -->
+    <!-- مع زر إظهار/إخفاء نموذج التعديل (Toggle Button) -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <img src="https://ui-avatars.com/api/?name=@System.Net.WebUtility.UrlEncode(doctorName)&background=0D6EFD&color=fff&size=80&rounded=true" alt="Doctor Avatar" class="rounded-circle border border-2 border-primary shadow-sm" width="80" height="80">
+                <div>
+                    <h2 class="fw-bold text-dark mb-1">@doctorName</h2>
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-bold">@role</span>
+                </div>
+            </div>
+
+            <!-- زر التبديل بين وضع العرض ووضع التعديل (Toggle Action) -->
+            <div>
+                <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="toggleEditForm()">
+                    <i class="bi bi-pencil-square me-1"></i> تعديل الملف الشخصي
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 2. شبكة الكروت التوضيحية لبيانات الصيدلية والموقع (View Mode Details) -->
+    <!-- ========================================================================= -->
+    <div class="row g-4 mb-4">
+        <!-- كارت موقع الصيدلية -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-geo-alt-fill text-primary me-2"></i>موقع الصيدلية</h5>
+                
+                <div class="rounded-4 bg-light d-flex flex-column align-items-center justify-content-center border p-4 text-center mb-3" style="min-height: 180px; background: linear-gradient(135deg, #e9ecef, #f8f9fa);">
+                    <i class="bi bi-pin-map-fill text-primary fs-1 mb-2"></i>
+                    <h6 class="fw-bold text-dark mb-1">الرياض - حي المروج</h6>
+                    <small class="text-muted">@address</small>
+                </div>
+                <div class="text-muted small">
+                    <i class="bi bi-info-circle me-1"></i> يتم تحديد الموقع تلقائياً لتسهيل عمليات التوريد والتوصيل بين الصيدليات.
+                </div>
+            </div>
+        </div>
+
+        <!-- كارت تفاصيل الصيدلية -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2"><i class="bi bi-building text-primary me-2"></i>تفاصيل الصيدلية</h5>
+                
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block mb-1">اسم الصيدلية</span>
+                        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-hospital me-1 text-primary"></i>@pharmacyName</h6>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block mb-1">رقم الترخيص</span>
+                        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-card-heading me-1 text-primary"></i>@licenseNumber</h6>
+                    </div>
+
+                    <div class="col-sm-6 mt-3">
+                        <span class="text-muted small d-block mb-1">رقم الجوال</span>
+                        <h6 class="fw-bold text-dark mb-0" dir="ltr"><i class="bi bi-telephone-fill me-1 text-primary"></i>@phoneNumber</h6>
+                    </div>
+
+                    <div class="col-sm-6 mt-3">
+                        <span class="text-muted small d-block mb-1">العنوان المسجل</span>
+                        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-map me-1 text-primary"></i>@address</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- كارت الأدوية منتهية الصلاحية -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-danger border-4 h-100 d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1 rounded-pill fw-bold">تنبيه حرج</span>
+                    <i class="bi bi-calendar-x fs-3 text-danger"></i>
+                </div>
+                <div>
+                    <span class="text-muted small fw-bold d-block">الأدوية منتهية الصلاحية</span>
+                    <h1 class="fw-bold text-danger my-1">@expiredCount</h1>
+                </div>
+                <a href="/Home/Index" class="text-decoration-none text-danger fw-bold small mt-2">عرض تقرير الانتهاء في لوحة التحكم ←</a>
+            </div>
+        </div>
+
+        <!-- كارت إجمالي البدائل -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-info border-4 h-100 d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-1 rounded-pill fw-bold">نشط هذا الشهر</span>
+                    <i class="bi bi-arrow-repeat fs-3 text-info"></i>
+                </div>
+                <div>
+                    <span class="text-muted small fw-bold d-block">إجمالي البدائل المتاحة</span>
+                    <h1 class="fw-bold text-info my-1">@totalAlternatives</h1>
+                </div>
+                <a href="/Home/Search" class="text-decoration-none text-info fw-bold small mt-2">استعراض البدائل المتاحة ←</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 3. نموذج تعديل بيانات الملف الشخصي (مخفي افتراضياً ولا يظهر إلا عند النقر) -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" id="editProfileContainer" style="display: @(showEditForm ? "block" : "none");">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+            <h4 class="fw-bold text-dark mb-0">
+                <i class="bi bi-person-lines-fill text-primary me-2"></i>نموذج تعديل بيانات الصيدلاني والصيدلية
+            </h4>
+            <button type="button" class="btn-close" onclick="toggleEditForm()" aria-label="إغلاق"></button>
+        </div>
+        
+        <p class="text-muted small mb-4">قم بتعديل اسمك أو رقم الترخيص أو اسم الصيدلية، ثم اضغط حفظ لتحديث البيانات ديناميكياً في الهيدر والصفحات.</p>
+
+        <form method="post" asp-controller="Home" asp-action="EditProfile">
+            <div class="row g-3">
+                
+                <!-- اسم الصيدلاني -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">اسم الصيدلاني</label>
+                    <input type="text" name="doctorName" value="@doctorName" class="form-control rounded-3 p-2" required />
+                </div>
+
+                <!-- صفة الصيدلي / المسمى الوظيفي -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">صفة الصيدلي / المسمى الوظيفي</label>
+                    <input type="text" name="role" value="@role" class="form-control rounded-3 p-2" required />
+                </div>
+
+                <!-- اسم الصيدلية -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">اسم الصيدلية</label>
+                    <input type="text" name="pharmacyName" value="@pharmacyName" class="form-control rounded-3 p-2" required />
+                </div>
+
+                <!-- رقم الترخيص -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">رقم الترخيص</label>
+                    <input type="text" name="licenseNumber" value="@licenseNumber" class="form-control rounded-3 p-2" required />
+                </div>
+
+                <!-- رقم الجوال -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">رقم الجوال</label>
+                    <input type="text" name="phoneNumber" value="@phoneNumber" class="form-control rounded-3 p-2" required />
+                </div>
+
+                <!-- العنوان المسجل -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">العنوان المسجل</label>
+                    <input type="text" name="address" value="@address" class="form-control rounded-3 p-2" required />
+                </div>
+
+                <!-- أزرار الحفظ والإلغاء -->
+                <div class="col-md-12 text-start mt-4 pt-2 border-top">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold me-2" onclick="toggleEditForm()">إلغاء</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                        💾 حفظ بيانات الملف الشخصي
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- كود جافاسكريبت البسيط لإظهار وإخفاء نموذج التعديل عند الضغط على الزر (Toggle Function) -->
+<!-- ========================================================================= -->
+@section Scripts {
+    <script>
+        // دالة التبديل (Toggle Function) البسيطة لإظهار/إخفاء كارت التعديل بكل سلاسة
+        function toggleEditForm() {
+            var container = document.getElementById("editProfileContainer");
+            if (container.style.display === "none" || container.style.display === "") {
+                container.style.display = "block";
+                container.scrollIntoView({ behavior: 'smooth' }); // التمرير السلس للنموذج
+            } else {
+                container.style.display = "none";
+            }
+        }
+    </script>
+}

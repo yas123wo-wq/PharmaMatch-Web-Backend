@@ -1,0 +1,139 @@
+@model pharmamatch.Application.DTOs.ProductMedicineDto
+@{
+    ViewData["Title"] = "تعديل بيانات الدواء - فارما ماتش";
+    var categories = ViewBag.Categories as IEnumerable<pharmamatch.Application.DTOs.CategoryDto> ?? new List<pharmamatch.Application.DTOs.CategoryDto>();
+    var ingredients = ViewBag.Ingredients as IEnumerable<pharmamatch.Application.DTOs.ActiveIngredientDto> ?? new List<pharmamatch.Application.DTOs.ActiveIngredientDto>();
+    int currentQuantity = ViewBag.CurrentQuantity ?? 0;
+    string batchNumber = ViewBag.BatchNumber as string ?? $"BN-{Model.Id}";
+    string expiryDate = ViewBag.ExpiryDate as string ?? DateTime.Now.AddYears(1).ToString("yyyy-MM-dd");
+    int selectedCategoryId = ViewBag.SelectedCategoryId ?? (Model.CategoryId ?? 0);
+}
+
+<!-- ========================================================================= -->
+<!-- ✏️ شاشة تعديل بيانات الدواء الشاملة (Edit View) -->
+<!-- تتضمن الحقول الإجبارية الحقيقية المتصلة بقاعدة البيانات لـ: -->
+<!-- 1. الفئة الدوائية (Category) -->
+<!-- 2. المادة الفعالة (Active Ingredient) -->
+<!-- 3. تاريخ الانتهاء (Expiry Date - تعديل يدوي بواسطة Date Picker) -->
+<!-- ========================================================================= -->
+
+<div class="container-fluid py-3">
+    <!-- 1. الهيدر وزر العودة السلس للوحة التحكم -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">✏️ تعديل بيانات الدواء والمخزون الشاملة</h3>
+            <p class="text-muted small mb-0">تحديث كافة تفاصيل الصنف (الاسم، السعر، الفئة الدوائية، المادة الفعالة، الكمية، رقم الدفعة، وتاريخ الانتهاء) في SQL Server</p>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm fw-bold bg-white btn-smooth-back">
+            ← العودة للوحة التحكم
+        </a>
+    </div>
+
+    <!-- 2. كارت نموذج التعديل الشامل (Edit Form) -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <form method="post" asp-controller="Home" asp-action="Edit">
+            <!-- المعرف الخفي (Hidden Id) لإرسال رقم الدواء للمتحكم -->
+            <input type="hidden" name="id" value="@Model.Id" />
+
+            <div class="row g-3">
+
+                <!-- 1. اسم الدواء (الاسم التجاري) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">اسم الدواء (الاسم التجاري) <span class="text-danger">*</span></label>
+                    <input type="text" name="tradeName" value="@Model.TradeName" class="form-control rounded-3 p-2" placeholder="اسم الدواء..." required />
+                </div>
+
+                <!-- 2. السعر -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">السعر (بالريال) <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" name="price" value="@Model.Price" class="form-control rounded-3 p-2" placeholder="السعر..." required />
+                </div>
+
+                <!-- 3. الفئة الدوائية (Category - حقل إجباري متصل بجدول Categories في قاعدة البيانات) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">الفئة الدوائية (Category) <span class="text-danger">*</span></label>
+                    <select id="categorySelect" name="categoryId" class="form-select rounded-3 p-2" required onchange="filterIngredients()">
+                        <option value="">-- اختر الفئة الدوائية --</option>
+                        @foreach (var cat in categories)
+                        {
+                            <option value="@cat.Id" selected="@(cat.Id == selectedCategoryId ? "selected" : null)">
+                                @cat.CategoryName
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- 4. المادة الفعالة والتركيز (Active Ingredient - حقل إجباري متصل بجدول ActiveIngredients) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">المادة الفعالة (Active Ingredient) <span class="text-danger">*</span></label>
+                    <select id="ingredientSelect" name="ingredientId" class="form-select rounded-3 p-2" required>
+                        <option value="">-- اختر المادة الفعالة والتركيز --</option>
+                        @foreach (var ing in ingredients)
+                        {
+                            <option value="@ing.Id"
+                                    data-category="@ing.CategoryId"
+                                    selected="@(ing.Id == Model.IngredientId ? "selected" : null)">
+                                @ing.ScientificName @(!string.IsNullOrEmpty(ing.CategoryName) ? $"({ing.CategoryName})" : "")
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- 5. إجمالي كمية المخزون -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">إجمالي كمية المخزون (بالوحدات) <span class="text-danger">*</span></label>
+                    <input type="number" name="totalQuantity" value="@currentQuantity" class="form-control rounded-3 p-2" placeholder="الكمية الحالية..." min="0" required />
+                </div>
+
+                <!-- 6. رقم التشغيلة / الدفعة (Batch Number) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">رقم التشغيلة / الدفعة (Batch Number)</label>
+                    <input type="text" name="batchNumber" value="@batchNumber" class="form-control rounded-3 p-2" placeholder="مثال: BN-1092-PA" />
+                </div>
+
+                <!-- 7. تاريخ الانتهاء (Expiry Date) - تعديل يدوي بواسطة Date Picker وليس تلقائياً -->
+                <div class="col-md-12">
+                    <label class="form-label fw-bold text-dark small">تاريخ الانتهاء (Expiry Date - تعديل يدوي) <span class="text-danger">*</span></label>
+                    <input type="date" name="expiryDate" value="@expiryDate" class="form-control rounded-3 p-2" required style="max-width: 300px;" />
+                    <small class="text-muted" style="font-size: 0.75rem;">
+                        🗓️ يُحدَّد تاريخ الانتهاء يدوياً من خلال منقي التاريخ (Date Picker) ويُحفظ مباشرةً في جدول InventoryBatches بقاعدة البيانات.
+                    </small>
+                </div>
+
+                <!-- أزرار الإجراءات (الحفظ والإلغاء) -->
+                <div class="col-md-12 text-start mt-4 pt-2 border-top">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-light rounded-pill px-4 fw-bold me-2">إلغاء</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                        💾 حفظ كافة التعديلات في قاعدة البيانات
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // دالة سريعة تصفّي المواد الفعالة حسب الفئة الدوائية المختارة
+        function filterIngredients() {
+            var selectedCat = document.getElementById('categorySelect').value;
+            var ingSelect = document.getElementById('ingredientSelect');
+            var options = ingSelect.options;
+
+            for (var i = 0; i < options.length; i++) {
+                var optCat = options[i].getAttribute('data-category');
+                if (!selectedCat || !optCat || optCat === selectedCat) {
+                    options[i].style.display = '';
+                } else {
+                    options[i].style.display = 'none';
+                }
+            }
+        }
+
+        // تشغيل الفلترة تلقائيًا عند تحميل الصفحة لإظهار المادة الفعالة المحفوظة
+        window.onload = function() {
+            filterIngredients();
+        };
+    </script>
+}

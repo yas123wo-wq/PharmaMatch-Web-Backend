@@ -1,0 +1,343 @@
+@model IEnumerable<pharmamatch.Application.DTOs.ProductMedicineDto>
+@{
+    ViewData["Title"] = "لوحة التحكم الرئيسية";
+    var expiredBatches = (ViewBag.ExpiredBatches as IEnumerable<pharmamatch.Application.DTOs.InventoryBatchDto>)?.ToList()
+                          ?? new List<pharmamatch.Application.DTOs.InventoryBatchDto>();
+    int totalStock = ViewBag.TotalStock ?? 0;
+    int criticalItemsCount = ViewBag.CriticalItemsCount ?? 0;
+
+    // =========================================================================
+    // دالة التنبيهات اللونية لتاريخ الانتهاء (C# Logic في Razor View)
+    // تحسب المدة المتبقية لتاريخ الانتهاء وتُرجع اسم CSS المناسب:
+    //   🔴 أحمر (expiry-red):    أقل من 3 أشهر أو منتهي الصلاحية
+    //   🟠 برتقالي (expiry-orange): بين 3 و 6 أشهر
+    //   🟢 أخضر (expiry-green):  أكثر من 6 أشهر
+    // =========================================================================
+    string GetExpiryClass(DateTime? date)
+    {
+        if (!date.HasValue) return "badge bg-light text-dark";
+        var dt = date.Value;
+        // منتهي الصلاحية -> أحمر فوراً
+        if (dt < DateTime.Now) return "badge expiry-red px-3 py-2 rounded-pill";
+        // حساب عدد الأشهر المتبقية
+        int monthsLeft = (dt.Year - DateTime.Now.Year) * 12 + dt.Month - DateTime.Now.Month;
+        if (monthsLeft < 3) return "badge expiry-red px-3 py-2 rounded-pill";      // أحمر
+        if (monthsLeft <= 6) return "badge expiry-orange px-3 py-2 rounded-pill";  // برتقالي
+        return "badge expiry-green px-3 py-2 rounded-pill";                         // أخضر
+    }
+}
+
+<!-- ========================================================================= -->
+<!-- 1. الهيدر والترحيب بالدكتورة سارة ود. أحمد مع أزرار الإجراءات الأفقية (Flexbox Toolbar) -->
+<!-- ========================================================================= -->
+<div class="row mb-4 g-3 align-items-stretch">
+    <!-- الجزء الأزرق الرئسي والترحيب -->
+    <div class="col-lg-8">
+        <div class="p-4 rounded-4 text-white shadow-sm d-flex flex-column justify-content-between h-100" style="background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <div>
+                <h3 class="fw-bold mb-2">مرحباً بعودتك، @ViewBag.DoctorNameCurrent 👋</h3>
+                <p class="mb-0 fs-6 text-light opacity-75">يقوم فارما ماتش بتتبع <b>@totalStock.ToString("N0")</b> صنفاً عبر 12 فئة محددة لتلبية الإمدادات السريرية والمحلية حالياً.</p>
+            </div>
+
+            <!-- شريط الأزرار التفاعلية الأفقي (مطابق لتوجيه التعديل في Figma) -->
+            <div class="d-flex flex-wrap align-items-center justify-content-start gap-2 mt-3 pt-2 border-top border-white border-opacity-25">
+                <!-- 1. زر إضافة دواء جديد للمخزون -->
+                <a href="/Home/Create" class="btn btn-light rounded-pill px-3 py-2 text-primary fw-bold shadow-sm d-flex align-items-center gap-1">
+                    <i class="bi bi-plus-lg"></i> إضافة دواء جديد للمخزون
+                </a>
+                
+                <!-- 2. زر إصدار تقرير -->
+                <button class="btn btn-outline-light rounded-pill px-3 py-2 shadow-sm fw-bold d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#reportModal">
+                    <i class="bi bi-file-earmark-text"></i> إصدار تقرير
+                </button>
+
+                <!-- 3. زر عرض التحليلات -->
+                <a href="#analyticsSection" class="btn btn-outline-light rounded-pill px-3 py-2 text-white fw-bold shadow-sm d-flex align-items-center gap-1">
+                    <i class="bi bi-bar-chart-line"></i> التحليلات
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- كارت المخزون الكلي (مرتبط بقاعدة البيانات 42,019) -->
+    <div class="col-lg-2 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+            <div class="d-flex justify-content-between text-muted mb-2">
+                <span class="small fw-bold">إجمالي المخزون</span>
+                <i class="bi bi-box-seam fs-4 text-primary"></i>
+            </div>
+            <h3 class="fw-bold text-dark my-1">@totalStock.ToString("N0")</h3>
+            <span class="small text-muted">وحدة متوفرة في النظام</span>
+        </div>
+    </div>
+
+    <!-- كارت الأصناف الحرجة (مرتبط بقاعدة البيانات 14) -->
+    <div class="col-lg-2 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white border-start border-danger border-4">
+            <div class="d-flex justify-content-between text-danger mb-2">
+                <span class="small fw-bold">أصناف حرجة</span>
+                <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+            </div>
+            <h3 class="fw-bold text-dark my-1">@criticalItemsCount</h3>
+            <span class="small text-danger fw-semibold">تحتاج متابعة قريبة</span>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 2. نافذة إصدار التقرير (Modal Dialog) -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 text-end">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="reportModalLabel">📑 إصدار تقرير المخزون</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="text-muted small mb-3">اختر نوع التقرير وصيغة التصدير المناسبة للصيدلية:</p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark small">نوع التقرير</label>
+                    <select class="form-select rounded-3">
+                        <option>تقرير المخزون الشامل</option>
+                        <option>تقرير الأدوية منتهية الصلاحية</option>
+                        <option>تقرير النواقص والحالات الحرجة</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark small">صيغة الملف</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="pdf" checked>
+                            <label class="form-check-label" for="pdf">PDF</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="excel">
+                            <label class="form-check-label" for="excel">Excel (XLSX)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="alert('جاري تحميل التقرير التلقائي...')">تحميل التقرير</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 3. قسم قائمة الأدوية والمخزون الرئيسي -->
+<!-- ========================================================================= -->
+<div class="mb-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-1 text-dark">قائمة الأدوية والمخزون</h4>
+            <p class="text-muted small mb-0">بيانات المخزون الحية متزامنة مع عمليات الصرف السريرية في SQL Server</p>
+        </div>
+
+        <div class="w-35">
+            <form asp-controller="Home" asp-action="Search" method="get">
+                <div class="input-group">
+                    <input type="text" name="query" class="form-control rounded-pill border-0 shadow-sm px-3" placeholder="🔍 اكتب اسم الدواء للبحث المتقدم..." />
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- كروت الأدوية الثلاثة المطابقة لـ Figma -->
+    <div class="row g-3">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var med in Model.Take(3))
+            {
+                int itemStock = med.InventoryBatches?.Sum(b => b.Quantity) ?? 0;
+                string statusBadgeClass = itemStock > 500 ? "bg-info text-dark bg-opacity-25" : (itemStock > 50 ? "bg-primary text-white" : "bg-danger text-white");
+                string statusText = itemStock > 500 ? "محتوى ممتاز" : (itemStock > 50 ? "مخزون مستقر" : "مخزون منخفض");
+                var latestBatch = med.InventoryBatches?.OrderBy(b => b.ExpiryDate).FirstOrDefault();
+                string expiryText = latestBatch != null ? latestBatch.ExpiryDate.ToString("dd/MM/yyyy") : "غير محدد";
+
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge @statusBadgeClass px-3 py-2 rounded-pill">@statusText</span>
+                            <form asp-action="ToggleWatchlist" asp-route-id="@med.Id" method="post">
+                                <button type="submit" class="btn btn-link p-0 text-warning fs-5">
+                                    <i class="bi @(med.IsWatchlist ? "bi-star-fill" : "bi-star")"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="text-center my-2">
+                            <div class="bg-light rounded-3 p-3 mb-2 d-inline-block">
+                                <span class="fs-1 text-primary">💊</span>
+                            </div>
+                            <h5 class="fw-bold mb-1">@med.TradeName</h5>
+                            <p class="text-muted small mb-2">@(med.ScientificName ?? "مادة فعالة غير محددة")</p>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center text-muted small my-2 border-top pt-2">
+                            <span>تاريخ الانتهاء: <span class="@GetExpiryClass(latestBatch?.ExpiryDate)">@expiryText</span></span>
+                            <span>المخزون: <b class="text-primary">@itemStock.ToString("N0") وحدة</b></span>
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <a href="/Home/Search?query=@med.TradeName" class="btn btn-outline-primary w-50 rounded-pill fw-bold">
+                                التفاصيل
+                            </a>
+                            <a asp-controller="Home" asp-action="Edit" asp-route-id="@med.Id" class="btn btn-primary w-50 rounded-pill fw-bold">
+                                ✏️ تعديل
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 4. جدول تقرير المخزون منتهي الصلاحية (ديناميكي من الداتايس) -->
+<!-- ========================================================================= -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="fw-bold mb-1 text-dark">تقرير المخزون منتهي الصلاحية</h5>
+            <p class="text-muted small mb-0">الشحنات والدفعات التي تجاوزت تاريخ الانتهاء المعتمد</p>
+        </div>
+        <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill fw-bold">
+            عدد الدفعات المنتهية: @expiredBatches.Count
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-end">اسم الدواء</th>
+                    <th class="text-center">رقم الدفعة</th>
+                    <th class="text-center">تاريخ الانتهاء</th>
+                    <th class="text-center">المستوى الحالي</th>
+                    <th class="text-center">الحالة</th>
+                    <th class="text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (expiredBatches.Any())
+                {
+                    @foreach (var batch in expiredBatches)
+                    {
+                        <tr>
+                            <td class="fw-bold">
+                                <span class="me-2">💊</span>@(batch.TradeName ?? "Amoxicillin 500mg")
+                            </td>
+                            <td class="text-center text-muted font-monospace">@batch.BatchNumber</td>
+                            <td class="text-center text-danger fw-bold">@batch.ExpiryDate.ToString("dd ديسمبر yyyy")</td>
+                            <td class="text-center fw-bold">@batch.Quantity.ToString("N0") وحدة</td>
+                            <td class="text-center">
+                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2">منتهي الصلاحية</span>
+                            </td>
+                            <td class="text-center">
+                                <!-- زر التعديل -->
+                                <a asp-controller="Home" asp-action="Edit" asp-route-id="@batch.MedicineId" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-1">
+                                    ✏️ تعديل
+                                </a>
+
+                                <!-- زر الحذف / الإتلاف -->
+                                <form asp-controller="Home" asp-action="Delete" asp-route-id="@batch.MedicineId" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من إتلاف أو حذف هذا الدواء؟');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">
+                                        إتلاف / حذف
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            لا توجد دفعات منتهية الصلاحية في قاعدة البيانات حالياً.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 5. قسم الرسم البياني والإجراءات الموصى بها -->
+<!-- ========================================================================= -->
+<div class="row g-4" id="analyticsSection">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1 text-dark">📊 تحليلات وتوقعات المخزون</h5>
+                    <p class="text-muted small mb-0">بناءً على معدل الصرف الحالي والتحليلات السريرية في الصيدلية</p>
+                </div>
+                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold">الأسبوع القادم</span>
+            </div>
+
+            <!-- الأعمدة البيانية الممثلة للأيام -->
+            <div class="d-flex justify-content-between align-items-end h-75 pt-4 px-3 border-bottom pb-2" style="min-height: 180px;">
+                <div class="text-center">
+                    <div class="bg-primary rounded-top mx-auto mb-2" style="width: 35px; height: 110px;"></div>
+                    <span class="small text-muted fw-bold">السبت</span>
+                </div>
+                <div class="text-center">
+                    <div class="bg-primary rounded-top mx-auto mb-2" style="width: 35px; height: 140px;"></div>
+                    <span class="small text-muted fw-bold">الأحد</span>
+                </div>
+                <div class="text-center">
+                    <div class="bg-danger bg-opacity-50 rounded-top mx-auto mb-2" style="width: 35px; height: 60px;"></div>
+                    <span class="small text-danger fw-bold">الإثنين</span>
+                </div>
+                <div class="text-center">
+                    <div class="bg-primary rounded-top mx-auto mb-2" style="width: 35px; height: 95px;"></div>
+                    <span class="small text-muted fw-bold">الثلاثاء</span>
+                </div>
+                <div class="text-center">
+                    <div class="bg-primary rounded-top mx-auto mb-2" style="width: 35px; height: 130px;"></div>
+                    <span class="small text-muted fw-bold">الأربعاء</span>
+                </div>
+                <div class="text-center">
+                    <div class="bg-primary rounded-top mx-auto mb-2" style="width: 35px; height: 160px;"></div>
+                    <span class="small text-muted fw-bold">الخميس</span>
+                </div>
+                <div class="text-center">
+                    <div class="bg-primary rounded-top mx-auto mb-2" style="width: 35px; height: 80px;"></div>
+                    <span class="small text-muted fw-bold">الجمعة</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h5 class="fw-bold mb-3 text-dark">الإجراءات الموصى بها</h5>
+
+                <div class="list-group list-group-flush border-0">
+                    <div class="list-group-item border-0 p-3 mb-2 rounded-3 bg-light">
+                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                            <h6 class="fw-bold mb-0 text-danger"><i class="bi bi-cart-plus me-1"></i> طلب عاجل: Warfarin</h6>
+                            <small class="text-muted">منذ 5 دقائق</small>
+                        </div>
+                        <p class="mb-0 text-muted small">من المتوقع نفاد المخزون خلال 48 ساعة بناءً على معدل الصرف الحالي (المتبقي 15 وحدة).</p>
+                    </div>
+
+                    <div class="list-group-item border-0 p-3 rounded-3 bg-light">
+                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                            <h6 class="fw-bold mb-0 text-warning"><i class="bi bi-shield-exclamation me-1"></i> فحص الصلاحية: Insulin</h6>
+                            <small class="text-muted">منذ ساعتين</small>
+                        </div>
+                        <p class="mb-0 text-muted small">يرجى التحقق من استقرار التبريد للدفعة رقم BN-4020-IN.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center pt-3">
+                <a href="/Home/Watchlist" class="text-decoration-none text-primary fw-bold small">عرض جميع التوصيات وقائمة المتابعة ←</a>
+            </div>
+        </div>
+    </div>
+</div>

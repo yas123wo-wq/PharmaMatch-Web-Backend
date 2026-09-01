@@ -1,0 +1,238 @@
+@model IEnumerable<pharmamatch.Application.DTOs.ProductMedicineDto>
+@{
+    ViewData["Title"] = "تتبع الأدوية والمفضلات";
+    int favoriteCount = ViewBag.FavoriteCount ?? 0;
+    int severeShortageCount = ViewBag.SevereShortageCount ?? 0;
+    int stableStockCount = ViewBag.StableStockCount ?? 0;
+}
+
+<div class="container-fluid py-2">
+    <!-- ========================================================================= -->
+    <!-- 1. الهيدر وأزرار العمليات لصفحة قائمة المتابعة -->
+    <!-- ========================================================================= -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">تتبع الأدوية والمفضلات</h2>
+            <p class="text-muted mb-0">مراقبة الأدوية ذات الأولوية المالية وإدارة قائمة المتابعة السريرية الخاصة بك.</p>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <a href="/Home/Create" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-1">
+                <i class="bi bi-plus-circle"></i> إضافة دواء للمتابعة
+            </a>
+            <button class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold shadow-sm bg-white" onclick="alert('جاري تصدير تقرير المتابعة...')">
+                <i class="bi bi-download"></i> تصدير التقرير
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 2. كروت المؤشرات الثلاثة المأخوذة من Figma (24 مفضلة، 3 نقص حاد، 18 مستقر) -->
+    <!-- ========================================================================= -->
+    <div class="row g-3 mb-4">
+        <!-- كارت الأدوية المفضلة -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-bold d-block mb-1">الأدوية المفضلة</span>
+                    <h2 class="fw-bold text-dark mb-0">@favoriteCount</h2>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle fs-3">
+                    <i class="bi bi-star-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- كارت في نقص حاد -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-danger border-4 d-flex flex-row justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-bold d-block mb-1">في نقص حاد</span>
+                    <h2 class="fw-bold text-danger mb-0">@severeShortageCount</h2>
+                </div>
+                <div class="bg-danger bg-opacity-10 text-danger p-3 rounded-circle fs-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- كارت مخزون مستقر -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-bold d-block mb-1">مخزون مستقر</span>
+                    <h2 class="fw-bold text-success mb-0">@stableStockCount</h2>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle fs-3">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 3. جدول قائمة المتابعة والتتبع السريري -->
+    <!-- ========================================================================= -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <span class="text-muted small">عرض <b>@Model.Count()</b> من أصل <b>@favoriteCount</b> دواء مفضل</span>
+            
+            <!-- شريط بحث سريع في القائمة -->
+            <div class="w-30">
+                <form method="get" asp-action="Watchlist">
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="search" value="@ViewBag.SearchQuery" class="form-control rounded-pill border px-3" placeholder="🔍 بحث سريع في القائمة..." />
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width: 60px;">مفضل</th>
+                        <th class="text-end">اسم الدواء والوصف الطبي</th>
+                        <th class="text-center">حالة التوفر</th>
+                        <th class="text-center" style="width: 200px;">مستوى المخزون</th>
+                        <th class="text-center">آخر تحديث</th>
+                        <th class="text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            int stock = item.InventoryBatches?.Sum(b => b.Quantity) ?? 0;
+                            
+                            // حساب شريط التقدم النسبة المئوية
+                            int percent = Math.Min(100, (int)((stock / 3000.0) * 100));
+                            if (percent < 5 && stock > 0) percent = 5;
+
+                            string badgeClass = "bg-success bg-opacity-10 text-success";
+                            string badgeText = "استقرار ممتاز - متوفر";
+                            string progressColor = "bg-primary";
+
+                            if (stock <= 50)
+                            {
+                                badgeClass = "bg-danger bg-opacity-10 text-danger";
+                                badgeText = "استقرار منخفض - شحنة تأخير";
+                                progressColor = "bg-danger";
+                            }
+                            else if (stock <= 200)
+                            {
+                                badgeClass = "bg-warning bg-opacity-10 text-dark";
+                                badgeText = "استقرار متوسط - متوفر";
+                                progressColor = "bg-warning";
+                            }
+
+                            // حساب الوقت المنقضي للعرض
+                            var timeSpan = DateTime.Now - item.LastUpdated;
+                            string timeText = timeSpan.TotalMinutes < 60 ? $"منذ {(int)timeSpan.TotalMinutes} دقيقة" :
+                                             timeSpan.TotalHours < 24 ? $"منذ {(int)timeSpan.TotalHours} ساعة" : "أمس";
+
+                            <tr>
+                                <!-- زر المفضلة التفاعلي -->
+                                <td class="text-center">
+                                    <form asp-action="ToggleWatchlist" asp-route-id="@item.Id" asp-route-returnUrl="/Home/Watchlist" method="post">
+                                        <button type="submit" class="btn btn-link p-0 text-warning border-0 bg-transparent fs-5">
+                                            <i class="bi bi-star-fill"></i>
+                                        </button>
+                                    </form>
+                                </td>
+
+                                <!-- تفاصيل الدواء والمادة الفعالة -->
+                                <td>
+                                    <div class="fw-bold text-dark fs-6">@item.TradeName</div>
+                                    <small class="text-muted">@(item.ScientificName ?? "مادة فعالة")</small>
+                                </td>
+
+                                <!-- حالة التوفر -->
+                                <td class="text-center">
+                                    <span class="badge @badgeClass rounded-pill px-3 py-2">@badgeText</span>
+                                </td>
+
+                                <!-- شريط مستوى المخزون الفعلي -->
+                                <td class="text-center">
+                                    <div class="small fw-bold text-dark mb-1">@stock.ToString("N0") وحدة @(stock <= 50 ? "فقط" : "")</div>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar @progressColor" role="progressbar" style="width: @percent%;"></div>
+                                    </div>
+                                </td>
+
+                                <!-- آخر تحديث -->
+                                <td class="text-center text-muted small">@timeText</td>
+
+                                <!-- الإجراءات السريعة -->
+                                <td class="text-center">
+                                    <a href="/Home/Search?query=@item.TradeName" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                        عرض التفاصيل
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                لا توجد أدوية مضافة في قائمة المتابعة حالياً.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 4. قسم التوصيات وتوقعات الأسبوع القادم المأخوذ من Figma -->
+    <!-- ========================================================================= -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h5 class="fw-bold mb-3 text-dark">الإجراءات الموصى بها</h5>
+
+                <div class="list-group list-group-flush border-0">
+                    <div class="list-group-item border-0 p-3 mb-2 rounded-3 bg-light d-flex align-items-start gap-3">
+                        <span class="fs-3 text-danger"><i class="bi bi-cart-dash"></i></span>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-1 text-danger">طلب عاجل: Warfarin</h6>
+                                <small class="text-muted">منذ 5 دقائق</small>
+                            </div>
+                            <p class="mb-0 text-muted small">من المتوقع نفاد المخزون خلال 48 ساعة بناءً على معدل الصرف الحالي.</p>
+                        </div>
+                    </div>
+
+                    <div class="list-group-item border-0 p-3 rounded-3 bg-light d-flex align-items-start gap-3">
+                        <span class="fs-3 text-warning"><i class="bi bi-thermometer-snow"></i></span>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-1 text-warning">فحص الصلاحية: Insulin</h6>
+                                <small class="text-muted">منذ ساعتين</small>
+                            </div>
+                            <p class="mb-0 text-muted small">يرجى التحقق من استقرار التبريد والاستمرار السريري للدفعة رقم 402.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h5 class="fw-bold mb-3 text-dark">توقعات المخزون للأسبوع القادم</h5>
+                <div class="d-flex justify-content-between align-items-end h-75 pt-3 px-3 border-bottom pb-2" style="min-height: 150px;">
+                    <div class="text-center"><div class="bg-primary rounded-top mx-auto mb-2" style="width: 30px; height: 100px;"></div><span class="small text-muted">س</span></div>
+                    <div class="text-center"><div class="bg-primary rounded-top mx-auto mb-2" style="width: 30px; height: 130px;"></div><span class="small text-muted">ح</span></div>
+                    <div class="text-center"><div class="bg-danger bg-opacity-50 rounded-top mx-auto mb-2" style="width: 30px; height: 50px;"></div><span class="small text-danger fw-bold">ن</span></div>
+                    <div class="text-center"><div class="bg-primary rounded-top mx-auto mb-2" style="width: 30px; height: 90px;"></div><span class="small text-muted">ث</span></div>
+                    <div class="text-center"><div class="bg-primary rounded-top mx-auto mb-2" style="width: 30px; height: 120px;"></div><span class="small text-muted">ر</span></div>
+                    <div class="text-center"><div class="bg-primary rounded-top mx-auto mb-2" style="width: 30px; height: 140px;"></div><span class="small text-muted">خ</span></div>
+                    <div class="text-center"><div class="bg-primary rounded-top mx-auto mb-2" style="width: 30px; height: 75px;"></div><span class="small text-muted">ج</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

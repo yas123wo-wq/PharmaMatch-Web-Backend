@@ -1,0 +1,11 @@
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\bin\Debug\net10.0\pharmamatch.Domain.deps.json
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\bin\Debug\net10.0\pharmamatch.Domain.dll
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\bin\Debug\net10.0\pharmamatch.Domain.pdb
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\pharmamatch.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\pharmamatch.Domain.AssemblyInfoInputs.cache
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\pharmamatch.Domain.AssemblyInfo.cs
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\pharmamatch.Domain.csproj.CoreCompileInputs.cache
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\pharmamatch.Domain.dll
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\refint\pharmamatch.Domain.dll
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\pharmamatch.Domain.pdb
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\ref\pharmamatch.Domain.dll

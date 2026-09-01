@@ -1,0 +1,120 @@
+@{
+    ViewData["Title"] = "إضافة دواء جديد - فارما ماتش";
+    var categories = ViewBag.Categories as IEnumerable<pharmamatch.Application.DTOs.CategoryDto> ?? new List<pharmamatch.Application.DTOs.CategoryDto>();
+    var ingredients = ViewBag.Ingredients as IEnumerable<pharmamatch.Application.DTOs.ActiveIngredientDto> ?? new List<pharmamatch.Application.DTOs.ActiveIngredientDto>();
+}
+
+<!-- ========================================================================= -->
+<!-- 📝 شاشة إضافة دواء جديد لـ PharmaMatch (Create View) -->
+<!-- تتضمن الحقول الأساسية الإجبارية المتصلة بقاعدة البيانات: -->
+<!-- 1. الفئة الدوائية (Category) -->
+<!-- 2. المادة الفعالة (Active Ingredient) -->
+<!-- 3. تاريخ الانتهاء (Expiry Date من خلال منقي تاريخ يدوي Date Picker) -->
+<!-- ========================================================================= -->
+
+<div class="container-fluid py-3">
+    <!-- 1. الهيدر وزر العودة -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">💊 إضافة دواء جديد للمخزون</h3>
+            <p class="text-muted small mb-0">قم بتعبئة بيانات الصنف الصيدلاني بدقة لإدراجه وحفظه حياً في قاعدة البيانات</p>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm fw-bold bg-white btn-smooth-back">
+            ← العودة للوحة التحكم
+        </a>
+    </div>
+
+    <!-- 2. نموذج الإدخال (Create Form) -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <form method="post" asp-controller="Home" asp-action="Create">
+            <div class="row g-3">
+
+                <!-- أ) الاسم التجاري لدواء -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">اسم الدواء (الاسم التجاري) <span class="text-danger">*</span></label>
+                    <input type="text" name="tradeName" class="form-control rounded-3 p-2" placeholder="مثال: Panadol Extra" required />
+                </div>
+
+                <!-- ب) السعر بالريال -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">السعر (بالريال) <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" name="price" class="form-control rounded-3 p-2" placeholder="مثال: 15.50" required />
+                </div>
+
+                <!-- ج) الفئة الدوائية (Category - حقل إجباري متصل بقاعدة البيانات) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">الفئة الدوائية (Category) <span class="text-danger">*</span></label>
+                    <select id="categorySelect" name="categoryId" class="form-select rounded-3 p-2" required onchange="filterIngredients()">
+                        <option value="">-- اختر الفئة الدوائية (مثل: مسكنات، مضادات حيوية) --</option>
+                        @foreach (var cat in categories)
+                        {
+                            <option value="@cat.Id">@cat.CategoryName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- د) المادة الفعالة والتركيز (Active Ingredient - حقل إجباري متصل بقاعدة البيانات) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">المادة الفعالة (Active Ingredient) <span class="text-danger">*</span></label>
+                    <select id="ingredientSelect" name="ingredientId" class="form-select rounded-3 p-2" required>
+                        <option value="">-- اختر المادة الفعالة والتركيز --</option>
+                        @foreach (var ing in ingredients)
+                        {
+                            <option value="@ing.Id" data-category="@ing.CategoryId">
+                                @ing.ScientificName @(!string.IsNullOrEmpty(ing.CategoryName) ? $"({ing.CategoryName})" : "")
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- هـ) تاريخ الانتهاء (Expiry Date - من خلال Date Picker يدوي وليس تلقائياً) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">تاريخ الانتهاء (Expiry Date - تحديد يدوي) <span class="text-danger">*</span></label>
+                    <input type="date" name="expiryDate" class="form-control rounded-3 p-2" required value="@DateTime.Now.AddYears(1).ToString("yyyy-MM-dd")" />
+                    <small class="text-muted" style="font-size: 0.75rem;">حدد تاريخ الانتهاء بدقة بواسطة منقي التاريخ اليدوي.</small>
+                </div>
+
+                <!-- و) رقم التشغيلة / الدفعة (Batch Number) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark small">رقم التشغيلة / الدفعة (Batch Number)</label>
+                    <input type="text" name="batchNumber" class="form-control rounded-3 p-2" placeholder="مثال: BN-2026-PA" />
+                </div>
+
+                <!-- ز) الكمية الأولية في المخزون -->
+                <div class="col-md-12">
+                    <label class="form-label fw-bold text-dark small">الكمية الأولية في المخزون (بالوحدات) <span class="text-danger">*</span></label>
+                    <input type="number" name="initialQuantity" class="form-control rounded-3 p-2" placeholder="مثال: 100" min="1" value="100" required />
+                </div>
+
+                <!-- أزرار الحفظ والإلغاء -->
+                <div class="col-md-12 text-start mt-4 pt-3 border-top">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-light rounded-pill px-4 fw-bold me-2">إلغاء</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                        💾 حفظ الصنف في قاعدة البيانات
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // دالة سريعة تصفّي المواد الفعالة حسب الفئة الدوائية المختارة في القائمة المنسدلة
+        function filterIngredients() {
+            var selectedCat = document.getElementById('categorySelect').value;
+            var ingSelect = document.getElementById('ingredientSelect');
+            var options = ingSelect.options;
+
+            for (var i = 0; i < options.length; i++) {
+                var optCat = options[i].getAttribute('data-category');
+                if (!selectedCat || !optCat || optCat === selectedCat) {
+                    options[i].style.display = '';
+                } else {
+                    options[i].style.display = 'none';
+                }
+            }
+        }
+    </script>
+}

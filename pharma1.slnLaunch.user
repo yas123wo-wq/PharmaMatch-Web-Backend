@@ -1,0 +1,27 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "pharmamatch.Domain\\pharmamatch.Domain.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "pharmamatch.Infrastructure\\pharmamatch.Infrastructure.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "pharmamatch.API\\pharmamatch.API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "pharmamatch.Application\\pharmamatch.Application.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Webpharmamatch11\\Webpharmamatch11.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

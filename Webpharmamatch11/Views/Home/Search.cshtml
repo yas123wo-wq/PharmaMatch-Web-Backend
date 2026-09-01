@@ -1,0 +1,275 @@
+@model IEnumerable<pharmamatch.Application.DTOs.ProductMedicineDto>
+@{
+    ViewData["Title"] = "البحث عن الأدوية والبدائل الذكية";
+    var categories = (ViewBag.Categories as IEnumerable<pharmamatch.Application.DTOs.CategoryDto>)?.ToList()
+                     ?? new List<pharmamatch.Application.DTOs.CategoryDto>();
+    var alternatives = (ViewBag.Alternatives as IEnumerable<pharmamatch.Application.DTOs.ProductMedicineDto>)?.ToList()
+                       ?? new List<pharmamatch.Application.DTOs.ProductMedicineDto>();
+    string query = ViewBag.SearchQuery as string ?? "";
+    int? selectedCategory = ViewBag.SelectedCategory as int?;
+    string selectedStatus = ViewBag.SelectedStatus as string ?? "";
+
+    // =========================================================================
+    // دالة تحديد التنبيه اللوني لتاريخ الانتهاء (C# Logic)
+    // يتم حساب المدة المتبقية ومقارنتها مع الحد الفاصل (3 أشهر و 6 أشهر)
+    // أحمر:  أقل من 3 أشهر أو منتهي الصلاحية
+    // برتقالي: بين 3 و 6 أشهر
+    // أخضر:  أكثر من 6 أشهر
+    // =========================================================================
+    string GetExpiryClass(DateTime? date)
+    {
+        if (!date.HasValue) return "badge bg-light text-dark";
+        var dt = date.Value;
+        // إذا انتهت الصلاحية اليوم أو سبق ذلك -> أحمر
+        if (dt < DateTime.Now) return "badge expiry-red px-3 py-2 rounded-pill";
+        // حساب عدد الأشهر المتبقية
+        int monthsLeft = (dt.Year - DateTime.Now.Year) * 12 + dt.Month - DateTime.Now.Month;
+        if (monthsLeft < 3) return "badge expiry-red px-3 py-2 rounded-pill";       // أقل من 3 أشهر -> أحمر
+        if (monthsLeft <= 6) return "badge expiry-orange px-3 py-2 rounded-pill";   // 3 - 6 أشهر -> برتقالي
+        return "badge expiry-green px-3 py-2 rounded-pill";                          // أكثر من 6 أشهر -> أخضر
+    }
+}
+
+<div class="container-fluid py-2">
+    <!-- ========================================================================= -->
+    <!-- 1. هيدر صفحة البحث المتقدم -->
+    <!-- ========================================================================= -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">🔍 البحث عن الأدوية والمكونات والبدائل الذكية</h2>
+            <p class="text-muted mb-0">الوصول إلى بيانات المخزون والبدائل الصيدلانية في الوقت الفعلي عبر شبكة PharmaMatch.</p>
+        </div>
+        <a href="/Home/Index" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm bg-white btn-smooth-back">
+            ← العودة للوحة التحكم
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- ========================================================================= -->
+        <!-- 2. لوحة الفلاتر الجانبية (Sidebar Filters) -->
+        <!-- ========================================================================= -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-top" style="top: 80px;">
+                <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">الفلاتر والتصنيفات</h5>
+
+                <form method="get" asp-action="Search">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">اسم الدواء أو المادة الفعالة</label>
+                        <input type="text" name="query" value="@query" class="form-control rounded-3" placeholder="أدخل كلمة البحث..." />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">الفئة الدوائية</label>
+                        <select name="categoryId" class="form-select rounded-3">
+                            <option value="">جميع الفئات</option>
+                            @foreach (var cat in categories)
+                            {
+                                <option value="@cat.Id" selected="@(selectedCategory == cat.Id ? "selected" : null)">@cat.CategoryName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted d-block mb-2">حالة التوفر في المخزون</label>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="statusFilter" id="statusAll" value="" @(string.IsNullOrEmpty(selectedStatus) ? "checked" : "")>
+                            <label class="form-check-label small" for="statusAll">الكل</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="statusFilter" id="statusAvail" value="available" @(selectedStatus == "available" ? "checked" : "")>
+                            <label class="form-check-label small" for="statusAvail">متوفر (أكثر من 50)</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="statusFilter" id="statusLow" value="low" @(selectedStatus == "low" ? "checked" : "")>
+                            <label class="form-check-label small" for="statusLow">مخزون منخفض (50 أو أقل)</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm mb-2">
+                        🔍 تطبيق الفلاتر
+                    </button>
+                    <a href="/Home/Search" class="btn btn-light w-100 rounded-pill text-muted small fw-bold">
+                        إعادة ضبط
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- 3. عرض نتائج الاستعلام من قاعدة البيانات -->
+        <!-- ========================================================================= -->
+        <div class="col-lg-9">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">نتائج الاستعلام في قاعدة البيانات</h5>
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-bold">
+                        عدد النتائج: @(Model?.Count() ?? 0)
+                    </span>
+                </div>
+            </div>
+
+            <!-- قائمة النتائج الرئيسية -->
+            <div class="row g-3 mb-4">
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        int stock = item.InventoryBatches?.Sum(b => b.Quantity) ?? 0;
+                        var latestBatch = item.InventoryBatches?.OrderBy(b => b.ExpiryDate).FirstOrDefault();
+                        string expiryText = latestBatch != null ? latestBatch.ExpiryDate.ToString("dd/MM/yyyy") : "غير محدد";
+                        string categoryName = item.CategoryName ?? "عام";
+                        string expiryBadgeClass = GetExpiryClass(latestBatch?.ExpiryDate);
+
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white hover-shadow transition">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                                            <i class="bi bi-capsule"></i>
+                                        </div>
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <h5 class="fw-bold text-dark mb-0">@item.TradeName</h5>
+                                                <span class="badge bg-light text-dark border px-2 py-1 small">@categoryName</span>
+                                            </div>
+                                            <p class="text-muted small mb-0">
+                                                المادة الفعالة: <b>@(item.ScientificName ?? "غير محددة")</b> |
+                                                السعر: <b class="text-success">@item.Price.ToString("N2") ريال</b>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-4">
+                                        <div class="text-center">
+                                            <span class="small text-muted d-block">المخزون المتاح</span>
+                                            <span class="fw-bold fs-5 @(stock <= 50 ? "text-danger" : "text-dark")">
+                                                @stock.ToString("N0") <small class="fs-6 text-muted">وحدة</small>
+                                            </span>
+                                        </div>
+
+                                        <!-- التنبيه اللوني لتاريخ الانتهاء (أحمر / برتقالي / أخضر) -->
+                                        <div class="text-center">
+                                            <span class="small text-muted d-block mb-1">تاريخ الانتهاء</span>
+                                            <span class="@expiryBadgeClass">@expiryText</span>
+                                        </div>
+
+                                        <div class="text-center">
+                                            @if (stock <= 50)
+                                            {
+                                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2">مخزون منخفض</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2">متوفر</span>
+                                            }
+                                        </div>
+
+                                        <div class="d-flex align-items-center gap-2">
+                                            <a asp-controller="Home" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                                                ✏️ تعديل
+                                            </a>
+                                            <form asp-action="ToggleWatchlist" asp-route-id="@item.Id" asp-route-returnUrl="/Home/Search" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-outline-warning rounded-circle p-2" title="تفضيل / متابعة">
+                                                    <i class="bi @(item.IsWatchlist ? "bi-star-fill" : "bi-star")"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
+                        <i class="bi bi-search fs-1 text-muted d-block mb-2"></i>
+                        <h5 class="fw-bold text-dark">لا توجد نتائج مطابقة @(string.IsNullOrEmpty(query) ? "" : $"لـ \"{query}\"")</h5>
+                        <p class="text-muted small">يرجى المحاولة باستخدام كلمة بحث أخرى أو تغيير خيارات الفلترة.</p>
+                    </div>
+                }
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- 4. 💡 قسم البحث الذكي عن البدائل المقترحة (Smart Alternatives Section) -->
+            <!-- الفكرة الجوهرية لمشروع PharmaMatch: -->
+            <!-- يعرض النظام الأدوية التي تشترك في نفس المادة الفعالة (Active Ingredient) -->
+            <!-- للسماح للصيدلاني باقتراح بديل مناسب للمريض عند غياب الدواء المطلوب -->
+            <!-- =========================================================================
+            -->
+            @if (alternatives.Any())
+            {
+                <div class="card border-0 shadow rounded-4 p-4 bg-white mt-4" style="border-right: 5px solid #0d6efd !important; border-right-style: solid !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-primary mb-1">
+                                <i class="bi bi-arrow-repeat me-2"></i>
+                                💡 الأدوية البديلة المقترحة (تطابق المادة الفعالة)
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                تُعرض البدائل الصيدلانية بناءً على تطابق <b>المادة الفعالة (Active Ingredient)</b> في قاعدة البيانات —
+                                وهذه هي الفكرة الجوهرية لمشروع PharmaMatch
+                            </p>
+                        </div>
+                        <span class="badge bg-primary rounded-pill px-3 py-2">عدد البدائل: @alternatives.Count</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-end">اسم الدواء البديل</th>
+                                    <th class="text-center">المادة الفعالة والتركيز</th>
+                                    <th class="text-center">الفئة الدوائية</th>
+                                    <th class="text-center">السعر</th>
+                                    <th class="text-center">المخزون المتاح</th>
+                                    <th class="text-center">تاريخ الانتهاء</th>
+                                    <th class="text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var alt in alternatives)
+                                {
+                                    int altStock = alt.InventoryBatches?.Sum(b => b.Quantity) ?? 0;
+                                    var altBatch = alt.InventoryBatches?.OrderBy(b => b.ExpiryDate).FirstOrDefault();
+                                    string altExpiryText = altBatch != null ? altBatch.ExpiryDate.ToString("dd/MM/yyyy") : "غير محدد";
+                                    string altExpiryClass = GetExpiryClass(altBatch?.ExpiryDate);
+                                    <tr>
+                                        <td class="fw-bold text-dark">
+                                            <span class="me-2">💊</span>@alt.TradeName
+                                        </td>
+                                        <td class="text-center text-muted">@(alt.ScientificName ?? "غير محدد")</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border">@(alt.CategoryName ?? "عام")</span>
+                                        </td>
+                                        <td class="text-center text-success fw-bold">@alt.Price.ToString("N2") ريال</td>
+                                        <td class="text-center fw-bold text-primary">@altStock.ToString("N0") وحدة</td>
+                                        <td class="text-center">
+                                            <!-- التنبيه اللوني لتاريخ انتهاء البديل -->
+                                            <span class="@altExpiryClass">@altExpiryText</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-controller="Home" asp-action="Edit" asp-route-id="@alt.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                                ✏️ اختيار البديل
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            else if (Model != null && Model.Any())
+            {
+                <!-- رسالة توضيحية عندما يكون هناك نتائج لكن لا توجد بدائل -->
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-light mt-4 text-center">
+                    <p class="text-muted mb-0 small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        لا توجد أدوية بديلة بنفس المادة الفعالة في قاعدة البيانات للأدوية المبحوث عنها.
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="pharmamatch.API/pharmamatch.API.csproj" />
+  <Project Path="pharmamatch.Application/pharmamatch.Application.csproj" />
+  <Project Path="pharmamatch.Domain/pharmamatch.Domain.csproj" />
+  <Project Path="pharmamatch.Infrastructure/pharmamatch.Infrastructure.csproj" />
+  <Project Path="Webpharmamatch11/Webpharmamatch11.csproj" Id="822813ab-98d9-490a-bb59-d59fa20d87b6" />
+</Solution>

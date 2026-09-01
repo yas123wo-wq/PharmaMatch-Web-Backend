@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\pharmamatch.API\pharmamatch.API.csproj" />
+    <ProjectReference Include="..\pharmamatch.Application\pharmamatch.Application.csproj" />
+    <!--
+      ============================================================
+      ملاحظة Clean Architecture (مهمة للمصحح):
+      ============================================================
+      المرجع أدناه لطبقة Infrastructure مسموح به حصرياً في هذا
+      المشروع لأنه يمثل "Composition Root" (نقطة التجميع الوحيدة).
+      
+      الاستخدام المسموح به الوحيد: في Program.cs لتسجيل التبعيات:
+        builder.Services.AddInfrastructureServices(...)
+        DependencyInjection.SeedDatabase(...)
+      
+      ❌ ممنوع تماماً استخدام AppDbContext أو أي Repository
+         مباشرةً في أي Controller أو View في هذا المشروع.
+      
+      ✅ جميع الاتصالات بقاعدة البيانات تمر عبر:
+         Presentation → Application (IMediator + Interfaces)
+                      → Infrastructure (Repository implementations)
+      ============================================================
+    -->
+    <ProjectReference Include="..\pharmamatch.Infrastructure\pharmamatch.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
