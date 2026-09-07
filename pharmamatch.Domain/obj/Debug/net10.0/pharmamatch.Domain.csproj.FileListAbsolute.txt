@@ -9,3 +9,4 @@ C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\ph
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\refint\pharmamatch.Domain.dll
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\pharmamatch.Domain.pdb
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\ref\pharmamatch.Domain.dll
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Domain\obj\Debug\net10.0\pharmamatch.Domain.sourcelink.json

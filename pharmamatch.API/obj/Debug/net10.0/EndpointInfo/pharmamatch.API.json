@@ -830,17 +830,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProductMedicineDto"
+                "$ref": "#/components/schemas/CreateMedicineApiRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProductMedicineDto"
+                "$ref": "#/components/schemas/CreateMedicineApiRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ProductMedicineDto"
+                "$ref": "#/components/schemas/CreateMedicineApiRequest"
               }
             }
           },
@@ -921,6 +921,78 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/Profile": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PharmacistProfileDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PharmacistProfileDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PharmacistProfileDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PharmacistProfileDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PharmacistProfileDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PharmacistProfileDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -1113,6 +1185,29 @@
           }
         }
       },
+      "PharmacistProfileDto": {
+        "type": "object",
+        "properties": {
+          "doctorName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "pharmacyName": {
+            "type": "string"
+          },
+          "licenseNumber": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          }
+        }
+      },
       "ProductMedicineDto": {
         "type": "object",
         "properties": {
@@ -1220,6 +1315,9 @@
     },
     {
       "name": "ProductMedicines"
+    },
+    {
+      "name": "Profile"
     }
   ]
 }

@@ -158,22 +158,77 @@ namespace pharmamatch.API.Controllers
             return Ok(createdMed);
         }
 
-        // 6. PUT: api/ProductMedicines/5 (Update)
+        // 6. PUT: api/ProductMedicines/5 (Update with Batch & Full Details)
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateProductMedicine(int id, [FromBody] ProductMedicineDto medicineDto)
+        public async Task<IActionResult> UpdateProductMedicine(int id, [FromBody] CreateMedicineApiRequest request)
         {
-            if (id != medicineDto.Id)
+            if (request == null)
             {
-                return BadRequest(new { message = "معرف الدواء غير متطابق" });
+                return BadRequest(new { message = "بيانات التعديل غير صالحة" });
             }
 
-            if (!ModelState.IsValid)
+            var tradeName = (request.TradeName ?? request.Name ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(tradeName))
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { message = "اسم الدواء مطلوب" });
             }
 
-            var updatedMedicine = await _mediator.Send(new UpdateProductMedicineCommand(id, medicineDto));
-            return Ok(updatedMedicine);
+            int ingredientId = request.IngredientId;
+            var scientificName = (request.ScientificName ?? request.ActiveIngredient ?? "").Trim();
+
+            var ingredients = await _mediator.Send(new GetAllActiveIngredientsQuery());
+            if (ingredientId <= 0 && !string.IsNullOrWhiteSpace(scientificName))
+            {
+                var existingIng = ingredients.FirstOrDefault(i => i.ScientificName.Equals(scientificName, StringComparison.OrdinalIgnoreCase));
+                if (existingIng != null)
+                {
+                    ingredientId = existingIng.Id;
+                }
+                else
+                {
+                    int categoryId = request.CategoryId;
+                    if (categoryId <= 0)
+                    {
+                        var categories = await _mediator.Send(new GetAllCategoriesQuery());
+                        var categoryName = (request.CategoryName ?? request.Category ?? "").Trim();
+                        var existingCat = categories.FirstOrDefault(c => c.CategoryName.Equals(categoryName, StringComparison.OrdinalIgnoreCase));
+                        categoryId = existingCat?.Id ?? categories.FirstOrDefault()?.Id ?? 1;
+                    }
+
+                    var newIng = await _mediator.Send(new CreateActiveIngredientCommand(new ActiveIngredientDto
+                    {
+                        ScientificName = scientificName,
+                        CategoryId = categoryId
+                    }));
+                    ingredientId = newIng.Id;
+                }
+            }
+
+            if (ingredientId <= 0)
+            {
+                ingredientId = ingredients.FirstOrDefault()?.Id ?? 1;
+            }
+
+            int categoryIdForMed = request.CategoryId > 0 ? request.CategoryId : 1;
+            int quantity = request.InitialQuantity > 0 ? request.InitialQuantity : (request.Stock > 0 ? request.Stock : 10);
+            DateTime expiryDate = request.ExpiryDate ?? DateTime.Now.AddYears(2);
+            string batchNumber = string.IsNullOrWhiteSpace(request.BatchNumber)
+                ? $"BN-{id}"
+                : request.BatchNumber.Trim();
+
+            await _mediator.Send(new UpdateMedicineWithBatchCommand(
+                id,
+                tradeName,
+                request.Price,
+                categoryIdForMed,
+                ingredientId,
+                quantity,
+                batchNumber,
+                expiryDate
+            ));
+
+            var updatedMed = await _mediator.Send(new GetProductMedicineByIdQuery(id));
+            return Ok(updatedMed);
         }
 
         // 7. DELETE: api/ProductMedicines/5 (Delete)

@@ -17,3 +17,4 @@ C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Infrastructure\obj\Debug\ne
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Infrastructure\obj\Debug\net10.0\pharmamatch.Infrastructure.pdb
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Infrastructure\obj\Debug\net10.0\pharmamatch.Infrastructure.genruntimeconfig.cache
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Infrastructure\obj\Debug\net10.0\ref\pharmamatch.Infrastructure.dll
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.Infrastructure\obj\Debug\net10.0\pharmamatch.Infrastructure.sourcelink.json
