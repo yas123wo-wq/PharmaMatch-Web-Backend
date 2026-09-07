@@ -438,8 +438,8 @@
         "IsRequired": true
       },
       {
-        "Name": "medicineDto",
-        "Type": "pharmamatch.Application.DTOs.ProductMedicineDto",
+        "Name": "request",
+        "Type": "pharmamatch.API.Controllers.CreateMedicineApiRequest",
         "IsRequired": true
       }
     ],
@@ -517,5 +517,47 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "pharmamatch.API.Controllers.ProfileController",
+    "Method": "GetProfile",
+    "RelativePath": "api/Profile",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "pharmamatch.API.Controllers.ProfileController",
+    "Method": "UpdateProfile",
+    "RelativePath": "api/Profile",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "updatedProfile",
+        "Type": "pharmamatch.Application.DTOs.PharmacistProfileDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "pharmamatch.API.Controllers.ProfileController",
+    "Method": "UpdateProfile",
+    "RelativePath": "api/Profile",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "updatedProfile",
+        "Type": "pharmamatch.Application.DTOs.PharmacistProfileDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
   }
 ]

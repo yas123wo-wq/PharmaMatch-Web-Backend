@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using pharmamatch.Application.Interfaces;
 using pharmamatch.Infrastructure.Data;
 using pharmamatch.Infrastructure.Repositories;
+using pharmamatch.Infrastructure.Services;
 
 namespace pharmamatch.Infrastructure
 {
@@ -26,6 +27,9 @@ namespace pharmamatch.Infrastructure
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IActiveIngredientRepository, ActiveIngredientRepository>();
             services.AddScoped<IInventoryBatchRepository, InventoryBatchRepository>();
+
+            // خدمة الملف الشخصي - Singleton لأن بياناته مشتركة للتطبيق
+            services.AddSingleton<IPharmacistProfileService, PharmacistProfileService>();
 
             return services;
         }

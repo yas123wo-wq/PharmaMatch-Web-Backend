@@ -39,7 +39,7 @@
             <h2 class="fw-bold text-dark mb-1">🔍 البحث عن الأدوية والمكونات والبدائل الذكية</h2>
             <p class="text-muted mb-0">الوصول إلى بيانات المخزون والبدائل الصيدلانية في الوقت الفعلي عبر شبكة PharmaMatch.</p>
         </div>
-        <a href="/Home/Index" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm bg-white btn-smooth-back">
+        <a href="/Home/Index" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm btn-smooth-back">
             ← العودة للوحة التحكم
         </a>
     </div>
@@ -249,8 +249,8 @@
                                             <span class="@altExpiryClass">@altExpiryText</span>
                                         </td>
                                         <td class="text-center">
-                                            <a asp-controller="Home" asp-action="Edit" asp-route-id="@alt.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                                ✏️ اختيار البديل
+                                            <a asp-controller="Home" asp-action="SelectAlternative" asp-route-id="@alt.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                                🔄 اختيار البديل
                                             </a>
                                         </td>
                                     </tr>

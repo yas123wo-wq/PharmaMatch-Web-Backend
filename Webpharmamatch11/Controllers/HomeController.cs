@@ -8,6 +8,7 @@ using pharmamatch.Application.Features.Categories.Queries;
 using pharmamatch.Application.Features.InventoryBatches.Queries;
 using pharmamatch.Application.Features.ProductMedicines.Commands;
 using pharmamatch.Application.Features.ProductMedicines.Queries;
+using pharmamatch.Application.Interfaces;
 using Webpharmamatch11.Models;
 
 namespace Webpharmamatch11.Controllers
@@ -18,23 +19,17 @@ namespace Webpharmamatch11.Controllers
     // ملتزم تماماً بمعمارية Clean Architecture بنسبة 100%:
     // - عزل تام عن DbContext و EF Core و Domain Entities.
     // - يتعامل حصرياً مع طبقة التطبيق عبر MediatR ومجسمات DTOs.
+    // - بيانات الملف الشخصي تُحفظ دائماً عبر IPharmacistProfileService (Infrastructure).
     // =========================================================================
     public class HomeController : Controller
     {
         private readonly IMediator _mediator;
+        private readonly IPharmacistProfileService _profileService;
 
-        // بيانات الملف الشخصي للصيدلاني (مخزنة في التطبيق وتتحدث فوراً وحياً في كافة صفحات الموقع)
-        public static string DoctorName = "د. أحمد عبد الرحمن";
-        public static string Role = "صيدلي مرخص";
-        public static string PharmacyName = "صيدلية الشفاء الحديثة";
-        public static string LicenseNumber = "LIC-2024-9981-AR";
-        public static string PhoneNumber = "+966 50 123 4567";
-        public static string Address = "حي المروج، الرياض، المملكة العربية السعودية";
-
-        // حقن وسيط طبقة التطبيق (IMediator) حصرياً بدون أي اتصال مع قواعد البيانات
-        public HomeController(IMediator mediator)
+        public HomeController(IMediator mediator, IPharmacistProfileService profileService)
         {
             _mediator = mediator;
+            _profileService = profileService;
         }
 
         // =========================================================================
@@ -42,8 +37,9 @@ namespace Webpharmamatch11.Controllers
         // =========================================================================
         public override void OnActionExecuting(ActionExecutingContext filterContext)
         {
-            ViewBag.DoctorNameCurrent = DoctorName;
-            ViewBag.RoleCurrent = Role;
+            var profile = _profileService.GetProfile();
+            ViewBag.DoctorNameCurrent = profile.DoctorName;
+            ViewBag.RoleCurrent = profile.Role;
             base.OnActionExecuting(filterContext);
         }
 
@@ -117,12 +113,13 @@ namespace Webpharmamatch11.Controllers
             var batches = await _mediator.Send(new GetAllInventoryBatchesQuery());
             int expiredCount = batches.Count(b => b.ExpiryDate < DateTime.Now);
 
-            ViewBag.DoctorName = DoctorName;
-            ViewBag.Role = Role;
-            ViewBag.PharmacyName = PharmacyName;
-            ViewBag.LicenseNumber = LicenseNumber;
-            ViewBag.PhoneNumber = PhoneNumber;
-            ViewBag.Address = Address;
+            var profile = _profileService.GetProfile();
+            ViewBag.DoctorName    = profile.DoctorName;
+            ViewBag.Role          = profile.Role;
+            ViewBag.PharmacyName  = profile.PharmacyName;
+            ViewBag.LicenseNumber = profile.LicenseNumber;
+            ViewBag.PhoneNumber   = profile.PhoneNumber;
+            ViewBag.Address       = profile.Address;
             ViewBag.ExpiredCount = expiredCount;
             ViewBag.TotalAlternatives = 420;
             ViewBag.ShowEditForm = showEdit;
@@ -136,19 +133,41 @@ namespace Webpharmamatch11.Controllers
         [HttpPost]
         public IActionResult EditProfile(string doctorName, string role, string pharmacyName, string licenseNumber, string phoneNumber, string address)
         {
-            if (!string.IsNullOrWhiteSpace(doctorName)) DoctorName = doctorName;
-            if (!string.IsNullOrWhiteSpace(role)) Role = role;
-            if (!string.IsNullOrWhiteSpace(pharmacyName)) PharmacyName = pharmacyName;
-            if (!string.IsNullOrWhiteSpace(licenseNumber)) LicenseNumber = licenseNumber;
-            if (!string.IsNullOrWhiteSpace(phoneNumber)) PhoneNumber = phoneNumber;
-            if (!string.IsNullOrWhiteSpace(address)) Address = address;
+            var current = _profileService.GetProfile();
 
-            TempData["SuccessMessage"] = "تم تحديث بيانات الملف الشخصي بنجاح وتحديث اسم الصيدلاني في الهيدر العلوي تلقائياً!";
+            var updated = new PharmacistProfileDto
+            {
+                DoctorName    = !string.IsNullOrWhiteSpace(doctorName)    ? doctorName.Trim()    : current.DoctorName,
+                Role          = !string.IsNullOrWhiteSpace(role)          ? role.Trim()          : current.Role,
+                PharmacyName  = !string.IsNullOrWhiteSpace(pharmacyName)  ? pharmacyName.Trim()  : current.PharmacyName,
+                LicenseNumber = !string.IsNullOrWhiteSpace(licenseNumber) ? licenseNumber.Trim() : current.LicenseNumber,
+                PhoneNumber   = !string.IsNullOrWhiteSpace(phoneNumber)   ? phoneNumber.Trim()   : current.PhoneNumber,
+                Address       = !string.IsNullOrWhiteSpace(address)       ? address.Trim()       : current.Address,
+            };
+
+            _profileService.SaveProfile(updated);
+
+            TempData["SuccessMessage"] = "تم تحديث بيانات الملف الشخصي بنجاح وحفظها بشكل دائم!";
             return RedirectToAction("Profile", new { showEdit = false });
         }
 
         // =========================================================================
-        // 7. 💊 إضافة دواء جديد للمخزون (Create Actions)
+        // 7. 🔄 اختيار دواء بديل (SelectAlternative Action)
+        // يُعيد توجيه المستخدم إلى صفحة البحث بالدواء البديل كنتيجة رئيسية
+        // يستخدم MediatR وفق Clean Architecture - لا تعامل مباشر مع قاعدة البيانات
+        // =========================================================================
+        public async Task<IActionResult> SelectAlternative(int id)
+        {
+            var medicine = await _mediator.Send(new GetProductMedicineByIdQuery(id));
+            if (medicine == null)
+                return RedirectToAction("Search");
+
+            // إعادة توجيه البحث باسم الدواء البديل ليظهر كنتيجة رئيسية
+            return RedirectToAction("Search", new { query = medicine.TradeName });
+        }
+
+        // =========================================================================
+        // 8. 💊 إضافة دواء جديد للمخزون (Create Actions)
         // =========================================================================
         public async Task<IActionResult> Create()
         {

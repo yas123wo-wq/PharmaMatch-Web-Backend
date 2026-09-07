@@ -354,4 +354,5 @@ C:\Users\N\Desktop\pharmamatch11\pharma1\Webpharmamatch11\bin\Debug\net10.0\zh-H
 C:\Users\N\Desktop\pharmamatch11\pharma1\Webpharmamatch11\bin\Debug\net10.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 C:\Users\N\Desktop\pharmamatch11\pharma1\Webpharmamatch11\bin\Debug\net10.0\MediatR.dll
 C:\Users\N\Desktop\pharmamatch11\pharma1\Webpharmamatch11\bin\Debug\net10.0\MediatR.Contracts.dll
+C:\Users\N\Desktop\pharmamatch11\pharma1\Webpharmamatch11\obj\Debug\net10.0\Webpharmamatch11.sourcelink.json
 C:\Users\N\Desktop\pharmamatch11\pharma1\Webpharmamatch11\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
