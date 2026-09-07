@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("pharmamatch.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+093e5b7b2ee7b4e80b59d89aff7ebadfd66cf8d1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+87c9562dc8892e59be4ab3890acfede768b517d5")]
 [assembly: System.Reflection.AssemblyProductAttribute("pharmamatch.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("pharmamatch.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

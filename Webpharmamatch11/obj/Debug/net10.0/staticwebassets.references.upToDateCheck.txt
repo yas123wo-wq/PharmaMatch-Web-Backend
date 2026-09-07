@@ -52,3 +52,6 @@ C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.API\obj\Debug\net10.0\stati
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.API\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.API\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.API\obj\Debug\net10.0\staticwebassets.build.json
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.API\obj\Debug\net10.0\staticwebassets.build.json
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.API\obj\Debug\net10.0\staticwebassets.build.json
+C:\Users\N\Desktop\pharmamatch11\pharma1\pharmamatch.API\obj\Debug\net10.0\staticwebassets.build.json

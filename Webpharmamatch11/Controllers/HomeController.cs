@@ -78,7 +78,8 @@ namespace Webpharmamatch11.Controllers
         // 3. تبديل حالة المتابعة / التفضيل (Toggle Watchlist Action)
         // =========================================================================
         [HttpPost]
-        public async Task<IActionResult> ToggleWatchlist(int id, string returnUrl)
+        [HttpGet]
+        public async Task<IActionResult> ToggleWatchlist(int id, string? returnUrl = null)
         {
             await _mediator.Send(new ToggleWatchlistCommand(id));
 
@@ -86,7 +87,58 @@ namespace Webpharmamatch11.Controllers
             {
                 return Redirect(returnUrl);
             }
+
+            var referer = Request.Headers["Referer"].ToString();
+            if (!string.IsNullOrEmpty(referer) && Uri.TryCreate(referer, UriKind.RelativeOrAbsolute, out var uri))
+            {
+                var localPath = uri.IsAbsoluteUri ? uri.PathAndQuery : referer;
+                if (Url.IsLocalUrl(localPath))
+                {
+                    return Redirect(localPath);
+                }
+            }
+
             return RedirectToAction("Watchlist");
+        }
+
+        // =========================================================================
+        // 3.1 إصدار وعرض التقرير المنسق للطباعة (Printable Report View)
+        // يقوم بجلب البيانات المنسقة للمخزون وعرضها في واجهة طباعة احترافية
+        // =========================================================================
+        public async Task<IActionResult> Report(string type = "all")
+        {
+            var profile = _profileService.GetProfile();
+            var allMedicines = (await _mediator.Send(new GetAllProductMedicinesQuery())).ToList();
+
+            IEnumerable<ProductMedicineDto> reportData = allMedicines;
+            string reportTitle = "تقرير المخزون الشامل للأدوية";
+
+            if (type.Equals("expired", StringComparison.OrdinalIgnoreCase))
+            {
+                reportTitle = "تقرير الأدوية منتهية الصلاحية";
+                reportData = allMedicines.Where(m => m.InventoryBatches != null && m.InventoryBatches.Any(b => b.ExpiryDate < DateTime.Now)).ToList();
+            }
+            else if (type.Equals("critical", StringComparison.OrdinalIgnoreCase) || type.Equals("shortage", StringComparison.OrdinalIgnoreCase))
+            {
+                reportTitle = "تقرير النواقص والحالات الحرجة";
+                reportData = allMedicines.Where(m => m.TotalQuantity <= 50 || (m.InventoryBatches != null && m.InventoryBatches.Any(b => b.ExpiryDate < DateTime.Now))).ToList();
+            }
+            else if (type.Equals("watchlist", StringComparison.OrdinalIgnoreCase))
+            {
+                reportTitle = "تقرير الأدوية في قائمة المتابعة والمفضلة";
+                reportData = allMedicines.Where(m => m.IsWatchlist).ToList();
+            }
+
+            ViewBag.ReportType = type;
+            ViewBag.ReportTitle = reportTitle;
+            ViewBag.ReportDate = DateTime.Now.ToString("yyyy/MM/dd HH:mm");
+            ViewBag.DoctorName = profile.DoctorName;
+            ViewBag.PharmacyName = profile.PharmacyName;
+            ViewBag.LicenseNumber = profile.LicenseNumber;
+            ViewBag.TotalItems = reportData.Count();
+            ViewBag.TotalUnits = reportData.Sum(m => m.TotalQuantity);
+
+            return View(reportData);
         }
 
         // =========================================================================
@@ -194,9 +246,25 @@ namespace Webpharmamatch11.Controllers
         // 8. حذف دواء من قاعدة البيانات (Delete Action)
         // =========================================================================
         [HttpPost]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id, string? returnUrl = null)
         {
             await _mediator.Send(new DeleteProductMedicineCommand(id));
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            var referer = Request.Headers["Referer"].ToString();
+            if (!string.IsNullOrEmpty(referer) && Uri.TryCreate(referer, UriKind.RelativeOrAbsolute, out var uri))
+            {
+                var localPath = uri.IsAbsoluteUri ? uri.PathAndQuery : referer;
+                if (Url.IsLocalUrl(localPath))
+                {
+                    return Redirect(localPath);
+                }
+            }
+
             return RedirectToAction("Index");
         }
 

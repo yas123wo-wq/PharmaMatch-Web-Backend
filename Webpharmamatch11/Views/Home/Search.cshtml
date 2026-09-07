@@ -168,8 +168,19 @@
                                             <a asp-controller="Home" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
                                                 ✏️ تعديل
                                             </a>
-                                            <form asp-action="ToggleWatchlist" asp-route-id="@item.Id" asp-route-returnUrl="/Home/Search" method="post" class="d-inline">
-                                                <button type="submit" class="btn btn-outline-warning rounded-circle p-2" title="تفضيل / متابعة">
+
+                                            <!-- 🗑️ زر الحذف المباشر المضاف لكارت الدواء -->
+                                            <form asp-controller="Home" asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من رغبتك في حذف دواء (@item.TradeName) نهائياً من النظام؟');">
+                                                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" title="حذف الدواء">
+                                                    🗑️ حذف
+                                                </button>
+                                            </form>
+
+                                            <!-- ⭐ زر النجمة والمفضلة التفاعلي مع دعم التبديل وإلغاء المتابعة -->
+                                            <form asp-controller="Home" asp-action="ToggleWatchlist" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                <button type="submit" class="btn @(item.IsWatchlist ? "btn-warning text-dark" : "btn-outline-warning") rounded-circle p-2" title="@(item.IsWatchlist ? "إلغاء المتابعة / إزالة من المفضلة" : "إضافة إلى المفضلة / المتابعة")">
                                                     <i class="bi @(item.IsWatchlist ? "bi-star-fill" : "bi-star")"></i>
                                                 </button>
                                             </form>
@@ -249,9 +260,17 @@
                                             <span class="@altExpiryClass">@altExpiryText</span>
                                         </td>
                                         <td class="text-center">
-                                            <a asp-controller="Home" asp-action="SelectAlternative" asp-route-id="@alt.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                                🔄 اختيار البديل
-                                            </a>
+                                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                                <a asp-controller="Home" asp-action="SelectAlternative" asp-route-id="@alt.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                                    🔄 اختيار البديل
+                                                </a>
+                                                <form asp-controller="Home" asp-action="ToggleWatchlist" asp-route-id="@alt.Id" method="post" class="d-inline">
+                                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                    <button type="submit" class="btn @(alt.IsWatchlist ? "btn-warning text-dark" : "btn-outline-warning") btn-sm rounded-circle p-1 px-2" title="@(alt.IsWatchlist ? "إلغاء المتابعة" : "إضافة للمفضلة")">
+                                                        <i class="bi @(alt.IsWatchlist ? "bi-star-fill" : "bi-star")"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
