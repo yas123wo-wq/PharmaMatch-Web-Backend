@@ -91,37 +91,29 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 text-end">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="reportModalLabel">📑 إصدار تقرير المخزون</h5>
+                <h5 class="modal-title fw-bold text-dark" id="reportModalLabel">📑 إصدار وطباعة تقرير المخزون</h5>
                 <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body py-4">
-                <p class="text-muted small mb-3">اختر نوع التقرير وصيغة التصدير المناسبة للصيدلية:</p>
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-dark small">نوع التقرير</label>
-                    <select class="form-select rounded-3">
-                        <option>تقرير المخزون الشامل</option>
-                        <option>تقرير الأدوية منتهية الصلاحية</option>
-                        <option>تقرير النواقص والحالات الحرجة</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-dark small">صيغة الملف</label>
-                    <div class="d-flex gap-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="format" id="pdf" checked>
-                            <label class="form-check-label" for="pdf">PDF</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="format" id="excel">
-                            <label class="form-check-label" for="excel">Excel (XLSX)</label>
-                        </div>
+            <form method="get" asp-controller="Home" asp-action="Report" target="_blank">
+                <div class="modal-body py-4">
+                    <p class="text-muted small mb-3">اختر نوع التقرير المطلوب لتوليد واجهة طباعة منسقة جاهزة للمتصفح:</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">نوع التقرير</label>
+                        <select name="type" class="form-select rounded-3">
+                            <option value="all">تقرير المخزون الشامل</option>
+                            <option value="expired">تقرير الأدوية منتهية الصلاحية</option>
+                            <option value="critical">تقرير النواقص والحالات الحرجة</option>
+                            <option value="watchlist">تقرير قائمة المتابعة والمفضلة</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="alert('جاري تحميل التقرير التلقائي...')">تحميل التقرير</button>
-            </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
+                        <i class="bi bi-printer"></i> فتح وطباعة التقرير
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -161,8 +153,8 @@
                     <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge @statusBadgeClass px-3 py-2 rounded-pill">@statusText</span>
-                            <form asp-action="ToggleWatchlist" asp-route-id="@med.Id" method="post">
-                                <button type="submit" class="btn btn-link p-0 text-warning fs-5">
+                            <form asp-action="ToggleWatchlist" asp-route-id="@med.Id" asp-route-returnUrl="/Home/Index" method="post">
+                                <button type="submit" class="btn btn-link p-0 text-warning fs-5" title="تفضيل / متابعة">
                                     <i class="bi @(med.IsWatchlist ? "bi-star-fill" : "bi-star")"></i>
                                 </button>
                             </form>
